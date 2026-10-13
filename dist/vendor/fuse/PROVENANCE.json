@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/OpenGolfSim/fuse",
+  "commit": "f457761ce79c9d620f9cba9a12de75d57d2b1ee2",
+  "license": "PolyForm Noncommercial 1.0.0",
+  "components": [
+    "BallPhysics",
+    "CourseSurfaces",
+    "GrassSurface",
+    "GrassBlades",
+    "SandMaterial",
+    "LakeSurface",
+    "PuttingGridMaterial"
+  ],
+  "note": "Unmodified engine modules bundled with esbuild; game adapters and gameplay are separate."
+}

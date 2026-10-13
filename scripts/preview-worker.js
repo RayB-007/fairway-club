@@ -1,0 +1,4 @@
+import * as THREE from '../dist/vendor/three.module.js';
+import {FuseShotEngine} from '../dist/fuse-physics.js';
+import {elevation,surfaceAt} from '../dist/terrain.js';
+self.onmessage=({data})=>{try{const {id,h,ball,pin,club,power,aim,shape,puttDistance}=data;const sample=(x,z)=>({lie:surfaceAt(x,z,h),height:elevation(x,z,h),normal:new THREE.Vector3(elevation(x-.1,z,h)-elevation(x+.1,z,h),.2,elevation(x,z-.1,h)-elevation(x,z+.1,h)).normalize()});const engine=new FuseShotEngine(sample),prediction=engine.preview(new THREE.Vector3(...ball),new THREE.Vector3(...pin),club,power,aim,shape,puttDistance);self.postMessage({id,points:prediction.points.map(p=>p.toArray()),end:prediction.end.toArray(),stats:prediction.stats,shot:engine.shot});}catch(e){self.postMessage({id:data.id,error:e.message});}};

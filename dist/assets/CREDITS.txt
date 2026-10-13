@@ -1,0 +1,12 @@
+OpenGolfSim Fuse engine and course textures / sounds:
+https://github.com/OpenGolfSim/fuse
+Pinned source commit: f457761ce79c9d620f9cba9a12de75d57d2b1ee2
+Required Notice: Copyright (c) 2026 OpenGolfSim LLC
+               : For commercial licensing, contact: help@opengolfsim.com
+License: ../vendor/fuse/LICENSE.md (PolyForm Noncommercial License 1.0.0)
+
+HDR lighting and sky: kloppenheim_06_puresky by Poly Haven
+https://polyhaven.com/a/kloppenheim_06_puresky
+CC0: https://polyhaven.com/license
+
+Three.js: MIT, see ../vendor/THREE-LICENSE.txt

@@ -1,0 +1,7 @@
+node_modules/
+upstream/
+.DS_Store
+releases/
+dist/downloads/
+tests.tmp.mjs
+*.map

@@ -1,0 +1,23 @@
+import {transform} from 'esbuild';
+import {mkdir,readFile,writeFile,readdir,copyFile,stat,chmod} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..'),output=path.join(root,'releases','Fairway Club for Mac'),app=path.join(output,'Fairway Club.app'),contents=path.join(app,'Contents'),site=path.join(contents,'Resources','site');
+// Retain editable source textures while shipping smaller offline JPEG assets.
+for(const [name,quality,size] of [['fairway',82],['fairway-normal',90,512],['sand',82]]){
+ const args=['-s','format','jpeg','-s','formatOptions',String(quality)];if(size)args.push('-Z',String(size));
+ execFileSync('/usr/bin/sips',[...args,path.join(root,'dist/assets/fuse',name+'.png'),'--out',path.join(root,'dist/assets/fuse',name+'.jpg')],{stdio:'ignore'});
+}
+await mkdir(path.join(contents,'MacOS'),{recursive:true});await mkdir(site,{recursive:true});
+const skip=new Set(['downloads','physics.js','fairway.png','fairway-normal.png','sand.png','.DS_Store']);
+let sourceBytes=0,packedBytes=0;
+async function copy(source,dest){for(const f of await readdir(source,{withFileTypes:true})){if(skip.has(f.name)||f.name.endsWith('.map'))continue;const src=path.join(source,f.name),out=path.join(dest,f.name);if(f.isDirectory()){await mkdir(out,{recursive:true});await copy(src,out);}else{sourceBytes+=(await stat(src)).size;if(f.name.endsWith('.js')){const code=(await transform(await readFile(src,'utf8'),{minify:true,keepNames:true,target:'es2022',format:'esm',legalComments:'inline'})).code;await writeFile(out,code);}else await copyFile(src,out);packedBytes+=(await stat(out)).size;}}}
+await copy(path.join(root,'dist'),site);
+const binary=path.join(contents,'MacOS','FairwayClub');execFileSync('/usr/bin/clang',['-Os','-arch','arm64','-arch','x86_64','-mmacosx-version-min=12.0','-Wall','-Wextra',path.join(root,'scripts/native/launcher.c'),'-o',binary]);await chmod(binary,0o755);
+const plist=`<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleName</key><string>Fairway Club</string><key>CFBundleDisplayName</key><string>Fairway Club</string><key>CFBundleIdentifier</key><string>local.fairwayclub.browser</string><key>CFBundleExecutable</key><string>FairwayClub</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.0.0</string><key>CFBundleVersion</key><string>1</string><key>LSMinimumSystemVersion</key><string>12.0</string><key>LSUIElement</key><true/><key>LSApplicationCategoryType</key><string>public.app-category.games</string><key>NSHighResolutionCapable</key><true/></dict></plist>`;
+await writeFile(path.join(contents,'Info.plist'),plist);await writeFile(path.join(contents,'PkgInfo'),'APPL????');
+const instructions=`FAIRWAY CLUB FOR MAC\n\nUnzip this folder and open Fairway Club.app. The app launches the included golf game in Safari and runs its tiny local server. No Python, Node, game client, or internet connection is needed. You may move the app to Applications. Keep the .app bundle intact.\n\nCompatible with Apple Silicon and Intel Macs; macOS 12 or newer with a modern Safari or Chrome browser. The launcher is locally signed, not Apple-notarized. If macOS blocks a downloaded copy, use System Settings > Privacy & Security > Open Anyway to approve this app.\n\nControls: WASD moves or drives, E enters/exits the cart, 1–6 chooses clubs, arrow keys aim, and holding/releasing Space swings.\n\nQuit Safari or close the game tab when finished. The lightweight launcher can be stopped in Activity Monitor by quitting FairwayClub.\n\nThis download contains the original Fairway Club browser game. It is not PGA TOUR 2K25 or an official 2K product. The linked conkel131/Pga-Tour repository has no game source to port.\n\nOpenGolfSim Fuse engine and textures: PolyForm Noncommercial 1.0.0. Required notices, license terms, and third-party credits are included inside Contents/Resources/site/vendor and site/assets/CREDITS.txt.\n`;
+await writeFile(path.join(output,'READ ME.txt'),instructions);
+execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-',app]);execFileSync('/usr/bin/codesign',['--verify','--deep','--strict',app]);
+await mkdir(path.join(root,'dist/downloads'),{recursive:true});const zip=path.join(root,'dist/downloads/FairwayClub-Mac.zip');execFileSync('/usr/bin/ditto',['-c','-k','--sequesterRsrc','--keepParent',output,zip]);
+console.log(JSON.stringify({app,zip,webSourceMB:sourceBytes/1048576,packedWebMB:packedBytes/1048576,zipMB:(await stat(zip)).size/1048576},null,2));
